@@ -1443,5 +1443,37 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
 </script>
+  <!-- SDKs do Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // 1. Suas chaves (copiadas do Firebase Console)
+  const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "recebimento-spot.firebaseapp.com",
+    projectId: "recebimento-spot",
+    storageBucket: "recebimento-spot.appspot.com",
+    messagingSenderId: "792568015207",
+    appId: "SEU_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // 2. ESCUTAR EM TEMPO REAL (Atualiza a tela de TODA a equipe)
+  db.collection("dados_painel").onSnapshot((snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      // Aqui entra a sua função JS que insere a linha/card no seu painel HTML
+      console.log("Novo dado recebido:", change.doc.data());
+      atualizarTabelaOuPainel(change.doc.data());
+    });
+  });
+
+  // 3. ENVIAR DADOS (Chamado quando alguém clica no botão de salvar)
+  function salvarAlteracao(novoItem) {
+    db.collection("dados_painel").add(novoItem);
+  }
+</script>
 </body>
 </html>
