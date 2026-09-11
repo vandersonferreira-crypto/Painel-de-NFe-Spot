@@ -1424,56 +1424,79 @@
       lucide.createIcons();
     });
   </script>
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+<!-- SDKs do Firebase Compatíveis -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDlsNBKbe8tNgHgHehiCvUWtqGuPE6VYu0",
-    authDomain: "recebimento-spot.firebaseapp.com",
-    projectId: "recebimento-spot",
-    storageBucket: "recebimento-spot.firebasestorage.app",
-    messagingSenderId: "792568015207",
-    appId: "1:792568015207:web:43d0d34a68693b2a01e7c2"
-  };
+  <script>
+    // 1. Chaves de Configuração Reais do seu Projeto
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlsNBKbe8tNgHgHehiCvUWtqGuPE6VYu0",
+      authDomain: "recebimento-spot.firebaseapp.com",
+      projectId: "recebimento-spot",
+      storageBucket: "recebimento-spot.firebasestorage.app",
+      messagingSenderId: "792568015207",
+      appId: "1:792568015207:web:43d0d34a68693b2a01e7c2"
+    };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
-  <!-- SDKs do Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-<script>
-  // 1. Suas chaves (copiadas do Firebase Console)
-  const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "recebimento-spot.firebaseapp.com",
-    projectId: "recebimento-spot",
-    storageBucket: "recebimento-spot.appspot.com",
-    messagingSenderId: "792568015207",
-    appId: "SEU_APP_ID"
-  };
+    // 2. ESCUTAR EM TEMPO REAL: Baixa as ações enviadas pela equipe instantaneamente
+    db.collection("acoes_financeiras").onSnapshot((snapshot) => {
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const actionKey = `${data.filial}_${data.noteNumber}`;
+        
+        // Atualiza a memória global do app com a tratativa recebida da nuvem
+        appState.financialActions[actionKey] = {
+          dateSent: data.dateSent,
+          purchaseDate: data.purchaseDate,
+          comments: data.comments,
+          email: data.email
+        };
+      });
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  // 2. ESCUTAR EM TEMPO REAL (Atualiza a tela de TODA a equipe)
-  db.collection("dados_painel").onSnapshot((snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      // Aqui entra a sua função JS que insere a linha/card no seu painel HTML
-      console.log("Novo dado recebido:", change.doc.data());
-      atualizarTabelaOuPainel(change.doc.data());
+      // Atualiza os cards e a tabela da tela sem recarregar a página
+      refreshDashboard();
     });
-  });
 
-  // 3. ENVIAR DADOS (Chamado quando alguém clica no botão de salvar)
-  function salvarAlteracao(novoItem) {
-    db.collection("dados_painel").add(novoItem);
-  }
-</script>
+    // 3. INTEGRAR A FUNÇÃO DE ENVIAR AO FIREBASE
+    // Sobrescrevemos a função de ação para salvar no Firestore ao clicar no botão
+    const originalSendFinancialAction = window.handleSendFinancialAction;
+    
+    window.handleSendFinancialAction = function() {
+      if (!appState.activeModalData) return;
+
+      const purchaseDate = document.getElementById('modalPurchaseDate').value;
+      if (!purchaseDate) {
+        showToast('Por favor, informe a Data da Compra.', 'alert-triangle');
+        document.getElementById('modalPurchaseDate').focus();
+        return;
+      }
+
+      const email = document.getElementById('modalFinanceEmail').value.trim() || 'financeiro@spotlar.com.br';
+      const comments = document.getElementById('modalComments').value.trim();
+      const data = appState.activeModalData;
+
+      // Grava no Firebase para que TODA a equipe veja a nota como TRATADA
+      db.collection("acoes_financeiras").doc(`${data.filial}_${data.noteNumber}`).set({
+        filial: data.filial,
+        noteNumber: data.noteNumber,
+        dateSent: new Date().toLocaleString('pt-BR'),
+        purchaseDate: purchaseDate,
+        comments: comments,
+        email: email
+      }).then(() => {
+        console.log("Ação salva no Firebase com sucesso!");
+      }).catch((error) => {
+        console.error("Erro ao salvar ação no Firebase: ", error);
+      });
+
+      // Executa a abertura do Gmail e o fluxo padrão do app
+      originalSendFinancialAction();
+    };
+  </script>
 </body>
 </html>
