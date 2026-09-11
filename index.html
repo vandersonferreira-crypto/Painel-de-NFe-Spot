@@ -1429,7 +1429,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // 1. Chaves de Configuração Reais do seu Projeto
+    // 1. Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDlsNBKbe8tNgHgHehiCvUWtqGuPE6VYu0",
       authDomain: "recebimento-spot.firebaseapp.com",
@@ -1439,33 +1439,47 @@
       appId: "1:792568015207:web:43d0d34a68693b2a01e7c2"
     };
 
-    // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 2. ESCUTAR EM TEMPO REAL: Baixa as ações enviadas pela equipe instantaneamente
+    // 2. ESCUTAR AS FILIAIS/NOTAS EM TEMPO REAL
+    db.collection("dados_filiais").onSnapshot((snapshot) => {
+      if (!snapshot.empty) {
+        snapshot.forEach((doc) => {
+          const branchData = doc.data();
+          appState.branches[branchData.name] = branchData;
+        });
+        refreshDashboard();
+      }
+    });
+
+    // 3. ESCUTAR AS TRATATIVAS FINANCEIRAS EM TEMPO REAL
     db.collection("acoes_financeiras").onSnapshot((snapshot) => {
       snapshot.forEach((doc) => {
         const data = doc.data();
         const actionKey = `${data.filial}_${data.noteNumber}`;
-        
-        // Atualiza a memória global do app com a tratativa recebida da nuvem
-        appState.financialActions[actionKey] = {
-          dateSent: data.dateSent,
-          purchaseDate: data.purchaseDate,
-          comments: data.comments,
-          email: data.email
-        };
+        appState.financialActions[actionKey] = data;
       });
-
-      // Atualiza os cards e a tabela da tela sem recarregar a página
       refreshDashboard();
     });
 
-    // 3. INTEGRAR A FUNÇÃO DE ENVIAR AO FIREBASE
-    // Sobrescrevemos a função de ação para salvar no Firestore ao clicar no botão
+    // 4. ENVIAR IMPORTAÇÃO DE CSV PARA A NUVEM (Para toda a equipe ver)
+    const originalProcessCsvFile = processCsvFile;
+    processCsvFile = async function(file, overrideBranchName = null) {
+      const result = await originalProcessCsvFile(file, overrideBranchName);
+      if (result.success && appState.branches[result.branchName]) {
+        const branchPayload = appState.branches[result.branchName];
+        
+        // Salva os dados do CSV importado no Firestore
+        db.collection("dados_filiais").doc(result.branchName).set(branchPayload)
+          .then(() => console.log(`Filial ${result.branchName} sincronizada com a equipe!`))
+          .catch((err) => console.error("Erro ao sincronizar filial:", err));
+      }
+      return result;
+    };
+
+    // 5. ENVIAR TRATATIVA FINANCEIRA PARA A NUVEM
     const originalSendFinancialAction = window.handleSendFinancialAction;
-    
     window.handleSendFinancialAction = function() {
       if (!appState.activeModalData) return;
 
@@ -1480,7 +1494,7 @@
       const comments = document.getElementById('modalComments').value.trim();
       const data = appState.activeModalData;
 
-      // Grava no Firebase para que TODA a equipe veja a nota como TRATADA
+      // Salva a tratativa no Firestore
       db.collection("acoes_financeiras").doc(`${data.filial}_${data.noteNumber}`).set({
         filial: data.filial,
         noteNumber: data.noteNumber,
@@ -1488,13 +1502,8 @@
         purchaseDate: purchaseDate,
         comments: comments,
         email: email
-      }).then(() => {
-        console.log("Ação salva no Firebase com sucesso!");
-      }).catch((error) => {
-        console.error("Erro ao salvar ação no Firebase: ", error);
       });
 
-      // Executa a abertura do Gmail e o fluxo padrão do app
       originalSendFinancialAction();
     };
   </script>
