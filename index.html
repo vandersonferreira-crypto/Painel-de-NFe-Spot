@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Acompanhamento Spot</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PapaParse CDN for robust CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            spot: {
+              yellow: '#ffffa0',
+              yellowLight: '#fffde7',
+              yellowHover: '#fef08a',
+              yellowDark: '#ca8a04',
+              charcoal: '#211f1d',
+              gray50: '#f8fafc',
+              gray100: '#f1f5f9',
+              gray200: '#e2e8f0',
+              gray300: '#cbd5e1',
+              gray600: '#475569',
+              gray700: '#334155',
+              gray800: '#1e293b',
+              gray900: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-track {
+      background: #181a1f;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-[#f8fafc] dark:bg-[#0f1115] text-slate-800 dark:text-slate-100 min-h-screen flex flex-col antialiased transition-colors duration-200">
+
+  <!-- Header Superior -->
+  <header class="bg-white dark:bg-[#181a1f] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm transition-colors duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        
+        <!-- Logo e Título -->
+        <div class="flex items-center space-x-3">
+          <div class="relative w-11 h-11 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-[#ffffa0] flex items-center justify-center shrink-0">
+            <img 
+              src="spotlar_logo.jpeg" 
+              alt="Logo Spot" 
+              class="w-full h-full object-cover"
+              onerror="this.onerror=null; this.parentElement.innerHTML='<svg viewBox=\'0 0 100 100\' class=\'w-7 h-7\'><g fill=\'#211f1d\'><rect x=\'44\' y=\'8\' width=\'12\' height=\'16\' rx=\'2\'/><rect x=\'64\' y=\'16\' width=\'12\' height=\'16\' rx=\'2\' transform=\'rotate(45 70 24)\'/><rect x=\'76\' y=\'44\' width=\'16\' height=\'12\' rx=\'2\'/><rect x=\'64\' y=\'68\' width=\'12\' height=\'16\' rx=\'2\' transform=\'rotate(-45 70 76)\'/><rect x=\'44\' y=\'76\' width=\'12\' height=\'16\' rx=\'2\'/><rect x=\'8\' y=\'44\' width=\'16\' height=\'12\' rx=\'2\'/><rect x=\'16\' y=\'16\' width=\'12\' height=\'16\' rx=\'2\' transform=\'rotate(-45 22 24)\'/><rect x=\'6\' y=\'66\' width=\'32\' height=\'12\' rx=\'3\' transform=\'rotate(45 22 72)\'/></g></svg>';"
+            />
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">Painel de Acompanhamento Spot</h1>
+            <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">Controle Diário de Notas Fiscais e Faturamento</p>
+          </div>
+        </div>
+
+        <!-- Ações do Cabeçalho: Tema + Importar + Reset -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          
+          <!-- Seletor de Perfil Claro / Escuro -->
+          <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700" role="group" aria-label="Seletor de Tema">
+            <button 
+              id="themeLightBtn" 
+              onclick="setTheme('light')" 
+              class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-900 bg-white shadow-xs dark:bg-transparent dark:text-slate-400 dark:hover:text-slate-200"
+              title="Perfil Claro">
+              <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span class="hidden md:inline">Claro</span>
+            </button>
+            <button 
+              id="themeDarkBtn" 
+              onclick="setTheme('dark')" 
+              class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-500 hover:text-slate-800 dark:text-slate-900 dark:bg-[#ffffa0] dark:shadow-xs"
+              title="Perfil Escuro">
+              <i data-lucide="moon" class="w-3.5 h-3.5 text-slate-700 dark:text-slate-900"></i>
+              <span class="hidden md:inline">Escuro</span>
+            </button>
+          </div>
+
+          <button onclick="triggerMultiUpload()" class="flex items-center space-x-1.5 px-3.5 py-2 bg-[#211f1d] hover:bg-slate-800 dark:bg-[#ffffa0] dark:hover:bg-yellow-200 text-[#ffffa0] dark:text-slate-900 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm border border-[#211f1d] dark:border-yellow-300">
+            <i data-lucide="upload-cloud" class="w-4 h-4 text-[#ffffa0] dark:text-slate-900"></i>
+            <span class="hidden sm:inline">Importar CSVs</span>
+          </button>
+
+          <button onclick="resetToSampleData()" class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition" title="Restaurar dados de exemplo">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Seção 1: Painéis Detalhados por Filial -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between bg-white dark:bg-[#181a1f] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
+        <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-[#fffde7] dark:bg-slate-800 border border-yellow-200 dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-[#ffffa0]">
+            <i data-lucide="building-2" class="w-4 h-4"></i>
+          </span>
+          Painéis Detalhados por Filial
+        </h2>
+        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          Coluna D = Valor NFe | Coluna Q = Emissão | Coluna H = Manifesto
+        </span>
+      </div>
+
+      <!-- Cards Grid por Filial -->
+      <div id="branchCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Injetado dinamicamente -->
+      </div>
+    </section>
+
+    <!-- Seção 2: Detalhamento Geral das Notas -->
+    <section id="detalhamentoNotasSection" class="bg-white dark:bg-[#181a1f] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden scroll-mt-20 transition-colors duration-200">
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-[#fffde7] dark:bg-slate-800 border border-yellow-200 dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-[#ffffa0]">
+                <i data-lucide="table" class="w-4 h-4"></i>
+              </span>
+              Detalhamento Geral das Notas
+            </h2>
+            <div id="activeFilterBadgeContainer"></div>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Listagem consolidada das notas fiscais, status de tratativa e acionamento financeiro</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Toggle Rápido > 10 dias -->
+          <button id="toggleOldNotesBtn" onclick="toggleOlderThan10DaysFilter()" class="text-xs px-3 py-2 rounded-xl font-semibold border transition flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <i data-lucide="clock-alert" class="w-3.5 h-3.5 text-amber-500"></i>
+            <span>> 10 dias</span>
+          </button>
+
+          <!-- Filtro de Tratativa / Status -->
+          <div class="flex items-center">
+            <label for="statusSelectFilter" class="sr-only">Filtrar por tratativa</label>
+            <select id="statusSelectFilter" onchange="applyTableFilters()" class="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-yellow-400">
+              <option value="ALL">Todas as Notas</option>
+              <option value="PENDING" selected>Apenas Pendentes</option>
+              <option value="TREATED">Apenas Tratadas</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Filial -->
+          <div class="flex items-center">
+            <label for="filialSelectFilter" class="sr-only">Filtrar por filial</label>
+            <select id="filialSelectFilter" onchange="applyTableFilters()" class="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-yellow-400">
+              <option value="ALL">Todas as Filiais</option>
+            </select>
+          </div>
+
+          <!-- Campo de Busca -->
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="tableSearchInput" onkeyup="applyTableFilters()" placeholder="Buscar nota, fornecedor..." class="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-40 sm:w-52">
+          </div>
+
+          <!-- Exportar CSV -->
+          <button onclick="exportConsolidatedCSV()" class="p-2 border border-slate-200 dark:border-slate-700 hover:bg-[#fffde7] dark:hover:bg-slate-800 rounded-xl text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 transition" title="Exportar tabela atual para CSV">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Exportar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela de Notas -->
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead>
+            <tr class="bg-slate-100/70 dark:bg-[#131519] border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+              <th class="py-3 px-4">Filial</th>
+              <th class="py-3 px-4">Nº da Nota</th>
+              <th class="py-3 px-4">Data de Emissão</th>
+              <th class="py-3 px-4">Dias</th>
+              <th class="py-3 px-4">Fornecedor</th>
+              <th class="py-3 px-4 text-right">Valor NFe</th>
+              <th class="py-3 px-4 text-center">Ação / Financeiro</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-100 dark:divide-slate-800/80 text-slate-700 dark:text-slate-300">
+            <!-- Linhas dinâmicas -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      <div class="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+        <div id="tableRecordCount">Exibindo 0 notas</div>
+        <div class="flex items-center space-x-1" id="paginationControls">
+          <!-- Controles dinâmicos -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal: Acionar Time Financeiro -->
+  <div id="financialActionModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="handleBackdropClick(event)">
+    <div id="modalCard" class="bg-white dark:bg-[#181a1f] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg overflow-hidden transform transition-all scale-95" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-[#131519] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#ffffa0] border border-yellow-300 text-slate-900 flex items-center justify-center font-bold">
+            <i data-lucide="send" class="w-4 h-4 text-slate-900"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">Acionar Time Financeiro</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Envio direto de pendência para a caixa de mensagens do Gmail</p>
+          </div>
+        </div>
+        <button onclick="closeFinancialActionModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Resumo da Nota -->
+      <div class="p-6 space-y-4">
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-[#131519] border border-slate-200 dark:border-slate-800 text-xs space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span id="modalFilialBadge" class="font-bold text-slate-800 dark:text-slate-200">Filial: -</span>
+            <span id="modalValorBadge" class="font-extrabold text-slate-900 dark:text-[#ffffa0] text-sm">R$ 0,00</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-slate-500 dark:text-slate-400">
+            <div><strong>Nº Nota:</strong> <span id="modalNoteNumber" class="font-mono text-slate-700 dark:text-slate-300">-</span></div>
+            <div><strong>Emissão:</strong> <span id="modalInclusaoDate" class="text-slate-700 dark:text-slate-300">-</span></div>
+          </div>
+          <div class="text-slate-500 dark:text-slate-400 truncate">
+            <strong>Fornecedor:</strong> <span id="modalClientName" class="text-slate-700 dark:text-slate-300">-</span>
+          </div>
+        </div>
+
+        <!-- Formulário -->
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              E-mail do Financeiro
+            </label>
+            <input 
+              type="email" 
+              id="modalFinanceEmail" 
+              value="financeiro@spotlar.com.br" 
+              class="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Data da Compra <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="date" 
+              id="modalPurchaseDate" 
+              class="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Comentários e Orientações Adicionais
+            </label>
+            <textarea 
+              id="modalComments" 
+              rows="3" 
+              class="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+            >Compra cartão Clara, recibo já enviado via App. Favor baixar nota do ERP.</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-[#131519] border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+        <button onclick="copyModalFormattedText()" class="px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5" title="Copiar texto formatado para a área de transferência">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Copiar Dados</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button onclick="closeFinancialActionModal()" class="px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
+            Cancelar
+          </button>
+          <button onclick="handleSendFinancialAction()" class="px-4 py-2 text-xs font-bold bg-[#ffffa0] hover:bg-yellow-200 text-slate-900 border border-yellow-300 rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-900"></i>
+            <span>Abrir no Gmail e Enviar</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Inputs Invisíveis para Upload de Arquivos -->
+  <input type="file" id="multiFileInput" multiple accept=".csv,text/csv" class="hidden" onchange="handleFilesSelected(event)">
+  <input type="file" id="singleBranchFileInput" accept=".csv,text/csv" class="hidden" onchange="handleSingleBranchFile(event)">
+
+  <!-- Toast de Notificação -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 bg-[#211f1d] dark:bg-slate-800 text-white text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-xl border border-neutral-700 dark:border-slate-600">
+    <div id="toastIcon" class="w-5 h-5 text-[#ffffa0] flex items-center justify-center"></div>
+    <div id="toastMessage">Operação realizada com sucesso!</div>
+  </div>
+
+  <script>
+    /* Estado Global da Aplicação */
+    const appState = {
+      branches: {},
+      financialActions: {},
+      selectedBranchFilter: 'ALL',
+      selectedStatusFilter: 'PENDING',
+      onlyOlderThan10Days: false,
+      searchQuery: '',
+      currentPage: 1,
+      pageSize: 10,
+      activeTargetBranchForUpload: null,
+      currentTheme: 'light',
+      activeModalData: null
+    };
+
+    /* Controle de Tema Claro / Escuro */
+    function setTheme(theme) {
+      appState.currentTheme = theme;
+      const htmlEl = document.documentElement;
+      const lightBtn = document.getElementById('themeLightBtn');
+      const darkBtn = document.getElementById('themeDarkBtn');
+
+      if (theme === 'dark') {
+        htmlEl.classList.add('dark');
+        htmlEl.classList.remove('light');
+        if (lightBtn && darkBtn) {
+          lightBtn.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-slate-200 bg-transparent';
+          darkBtn.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-900 bg-[#ffffa0] shadow-xs';
+        }
+      } else {
+        htmlEl.classList.remove('dark');
+        htmlEl.classList.add('light');
+        if (lightBtn && darkBtn) {
+          lightBtn.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-900 bg-white shadow-xs';
+          darkBtn.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-500 hover:text-slate-800 bg-transparent';
+        }
+      }
+
+      renderBranchCards();
+      renderTable();
+      updateFilterHeaderBadge();
+      updateToggleOldNotesBtn();
+      lucide.createIcons();
+    }
+
+    /* Formatadores */
+    const formatCurrencyBRL = (val) => {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+    };
+
+    const formatNumberBR = (val) => {
+      return new Intl.NumberFormat('pt-BR').format(val || 0);
+    };
+
+    function parseDateBR(dateStr) {
+      if (!dateStr) return null;
+      const s = String(dateStr).trim();
+      
+      const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      if (dmy) {
+        return new Date(parseInt(dmy[3], 10), parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10));
+      }
+
+      const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+      if (ymd) {
+        return new Date(parseInt(ymd[1], 10), parseInt(ymd[2], 10) - 1, parseInt(ymd[3], 10));
+      }
+
+      const parsed = new Date(s);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function calculateDaysElapsed(dateObj) {
+      if (!dateObj) return 0;
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const target = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+      const diffMs = today.getTime() - target.getTime();
+      return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    }
+
+    function formatDaysOffset(daysAgo) {
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    function parseValueTotal(val) {
+      if (val === null || val === undefined) return 0;
+      let s = String(val).trim();
+      if (!s) return 0;
+
+      s = s.replace(/R\$/gi, '').replace(/[\s"']/g, '');
+
+      if (s.includes(',') && s.includes('.')) {
+        if (s.indexOf('.') < s.indexOf(',')) {
+          s = s.replace(/\./g, '').replace(',', '.');
+        } else {
+          s = s.replace(/,/g, '');
+        }
+      } else if (s.includes(',')) {
+        s = s.replace(',', '.');
+      }
+
+      const num = parseFloat(s);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function initializeSampleData() {
+      const makeRow = (note, daysAgo, client, valorTotal) => {
+        const inclusaoDateStr = formatDaysOffset(daysAgo);
+        const parsedDate = parseDateBR(inclusaoDateStr);
+        return {
+          noteNumber: note,
+          inclusaoDate: inclusaoDateStr,
+          daysOld: daysAgo,
+          parsedDate: parsedDate,
+          client: client,
+          valorTotal: valorTotal
+        };
+      };
+
+      appState.financialActions = {};
+
+      appState.branches = {
+        'Matriz': {
+          name: 'Matriz',
+          filename: 'Matriz.csv',
+          lastUpdated: new Date().toLocaleDateString('pt-BR') + ' 09:30',
+          color: '#211f1d',
+          rows: [
+            makeRow('CT-e 000013837', 154, 'THEFF TRANSPORTES LTDA', 900.00),
+            makeRow('CT-e 000014806', 109, 'THEFF TRANSPORTES LTDA', 150.00),
+            makeRow('CT-e 000015549', 75, 'THEFF TRANSPORTES LTDA', 1584.17),
+            makeRow('CT-e 000017378', 40, 'TIAGO AUGUSTO FERREIRA - ME', 9500.00),
+            makeRow('NF-e 0000731627', 77, 'MAGAZINE LUIZA S/A', 3763.90),
+            makeRow('NF-e 000011297', 34, 'OTT ORE INDUSTRIA DE COLCHOES', 7330.51),
+            makeRow('NF-e 000019178', 1, 'DROPCHINA LTDA', 1454.03),
+            makeRow('NF-e 001990507', 1, 'XCOMM', 1419.26)
+          ]
+        },
+        'São Paulo': {
+          name: 'São Paulo',
+          filename: 'São Paulo.csv',
+          lastUpdated: new Date().toLocaleDateString('pt-BR') + ' 10:15',
+          color: '#475569',
+          rows: [
+            makeRow('NF-e 000025591', 365, 'DESIGN PISOS E REVESTIMENTOS LTDA', 5673.73),
+            makeRow('NF-e 000038840', 191, 'CD Cajamar', 1703.14),
+            makeRow('NF-e 000683396', 131, 'Leroy Merlin - Loja Morumbi', 2676.72),
+            makeRow('NF-e 000000578', 112, 'VULCAO EMPREITEIRA', 5301.00),
+            makeRow('NF-e 002092431', 109, 'BR DC BROKER DANLESTE', 4627.59),
+            makeRow('NF-e 000901539', 103, 'Loja Raposo Tavares', 3083.58),
+            makeRow('NF-e 006697530', 85, 'CD-GUARULHOS', 7927.48),
+            makeRow('NF-e 000000153', 75, 'MP DISTRIBUIDORA DE MATERIAIS', 7573.00),
+            makeRow('NF-e 000080234', 63, 'CASA ROSSI - CD', 2835.12),
+            makeRow('NF-e 000028220', 18, 'DESIGN PISOS E REVESTIMENTOS LTDA', 5778.50),
+            makeRow('NF-e 001704399', 0, 'OBRAMAX ATACADO DE CONSTRUCAO', 1852.30)
+          ]
+        },
+        'Curitiba': {
+          name: 'Curitiba',
+          filename: 'Curitiba.csv',
+          lastUpdated: new Date().toLocaleDateString('pt-BR') + ' 11:00',
+          color: '#64748b',
+          rows: [
+            makeRow('NF-e 000000261', 131, 'MARMOCAMPO', 1110.00),
+            makeRow('NF-e 000052677', 356, 'JUMA COMERCIO', 648.30),
+            makeRow('NF-e 000052740', 356, 'JUMA COMERCIO', 648.30),
+            makeRow('NF-e 000036467', 210, 'GRAY DIAMOND', 139.99),
+            makeRow('NF-e 000886421', 180, 'RUDEGON REF', 59.18),
+            makeRow('NF-e 000517181', 120, 'CASSOL MATERIAIS', 53.40),
+            makeRow('NF-e 000517490', 95, 'CASSOL MATERIAIS', 27.80)
+          ]
+        }
+      };
+    }
+
+    function processCsvFile(file, overrideBranchName = null) {
+      return new Promise((resolve) => {
+        Papa.parse(file, {
+          header: false,
+          skipEmptyLines: 'greedy',
+          encoding: 'UTF-8',
+          complete: function(results) {
+            try {
+              const data = results.data;
+              if (!data || data.length < 2) {
+                return resolve({ success: false, message: `Arquivo ${file.name} vazio ou com dados insuficientes.` });
+              }
+
+              let branchName = overrideBranchName;
+              if (!branchName) {
+                const baseName = file.name.replace(/\.[^/.]+$/, '').trim();
+                const lower = baseName.toLowerCase();
+                if (lower.includes('matriz')) branchName = 'Matriz';
+                else if (lower.includes('paulo') || lower.includes('sp')) branchName = 'São Paulo';
+                else if (lower.includes('curitiba') || lower.includes('parana') || lower.includes('paran')) branchName = 'Curitiba';
+                else {
+                  const cleaned = baseName.replace(/[-_]\d+$/, '').trim();
+                  branchName = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+                }
+              }
+
+              const headerRow = data[0].map(c => String(c).trim().toLowerCase());
+              
+              // 1. Coluna D: Valor Total
+              let valorColIndex = -1;
+              for (let i = 0; i < headerRow.length; i++) {
+                const h = headerRow[i];
+                if (h.includes('valor total') || h.includes('valortotal') || h === 'total' || h === 'valor') {
+                  valorColIndex = i;
+                  break;
+                }
+              }
+              if (valorColIndex === -1 && headerRow.length >= 4) valorColIndex = 3;
+              else if (valorColIndex === -1) valorColIndex = Math.max(0, headerRow.length - 1);
+
+              // 2. Coluna Q: Inclusão
+              let inclusaoColIndex = -1;
+              for (let i = 0; i < headerRow.length; i++) {
+                const h = headerRow[i];
+                if (h.includes('inclus') || h.includes('gerada') || h.includes('emissao') || h.includes('dt_inclusao')) {
+                  inclusaoColIndex = i;
+                  break;
+                }
+              }
+              if (inclusaoColIndex === -1 && headerRow.length >= 17) inclusaoColIndex = 16;
+
+              // 3. Coluna N: Fornecedor / Cliente
+              let clientColIndex = -1;
+              for (let i = 0; i < headerRow.length; i++) {
+                const h = headerRow[i];
+                if (h.includes('fornecedor') || h.includes('emitente') || h.includes('cliente') || h.includes('razao') || h.includes('nome')) {
+                  clientColIndex = i;
+                  break;
+                }
+              }
+              if (clientColIndex === -1 && headerRow.length >= 14) clientColIndex = 13;
+              else if (clientColIndex === -1) clientColIndex = 2;
+
+              // 4. Coluna B: Nº da Nota
+              let nfColIndex = 1;
+              for (let i = 0; i < headerRow.length; i++) {
+                const h = headerRow[i];
+                if (h.includes('nota') || h.includes('nf') || h.includes('operacao') || h.includes('operação')) {
+                  nfColIndex = i;
+                  break;
+                }
+              }
+
+              // 5. Coluna H: Manifesto ("Operação Não Realizada")
+              let manifestoColIndex = -1;
+              for (let i = 0; i < headerRow.length; i++) {
+                const h = headerRow[i];
+                if (h.includes('manifesto') || h.includes('status') || h.includes('situacao')) {
+                  manifestoColIndex = i;
+                  break;
+                }
+              }
+              if (manifestoColIndex === -1 && headerRow.length >= 8) manifestoColIndex = 7;
+
+              const parsedRows = [];
+              let ignoredNonRealizedCount = 0;
+
+              for (let r = 1; r < data.length; r++) {
+                const row = data[r];
+                if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
+
+                // Desconsiderar linhas onde Coluna H = "Operação Não Realizada"
+                if (manifestoColIndex >= 0 && row[manifestoColIndex]) {
+                  const manifestoStatus = String(row[manifestoColIndex])
+                    .trim()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase();
+
+                  if (manifestoStatus.includes('operacao nao realizada')) {
+                    ignoredNonRealizedCount++;
+                    continue;
+                  }
+                }
+
+                const rawVal = row[valorColIndex] !== undefined ? row[valorColIndex] : 0;
+                const valorTotal = parseValueTotal(rawVal);
+                const noteNumber = row[nfColIndex] ? String(row[nfColIndex]).trim() : `NF-${10000 + r}`;
+                const client = row[clientColIndex] ? String(row[clientColIndex]).trim() : `Fornecedor ${r}`;
+
+                let rawInclusao = inclusaoColIndex >= 0 && row[inclusaoColIndex] ? String(row[inclusaoColIndex]).trim() : '';
+                if (!rawInclusao) rawInclusao = new Date().toLocaleDateString('pt-BR');
+
+                const parsedDate = parseDateBR(rawInclusao);
+                const daysOld = parsedDate ? calculateDaysElapsed(parsedDate) : 0;
+
+                parsedRows.push({
+                  noteNumber,
+                  inclusaoDate: rawInclusao,
+                  daysOld,
+                  parsedDate,
+                  client,
+                  valorTotal
+                });
+              }
+
+              const now = new Date();
+              const formattedTime = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+              const branchColorPalette = ['#211f1d', '#475569', '#64748b', '#78716c', '#334155'];
+              const existingBranch = appState.branches[branchName];
+              const color = existingBranch ? existingBranch.color : branchColorPalette[Object.keys(appState.branches).length % branchColorPalette.length];
+
+              appState.branches[branchName] = {
+                name: branchName,
+                filename: file.name,
+                lastUpdated: formattedTime,
+                color: color,
+                rows: parsedRows
+              };
+
+              resolve({ 
+                success: true, 
+                branchName, 
+                count: parsedRows.length,
+                ignored: ignoredNonRealizedCount
+              });
+            } catch (err) {
+              console.error(err);
+              resolve({ success: false, message: `Erro ao processar ${file.name}: ${err.message}` });
+            }
+          },
+          error: function(err) {
+            resolve({ success: false, message: `Falha no leitor CSV: ${err.message}` });
+          }
+        });
+      });
+    }
+
+    function triggerMultiUpload() {
+      const input = document.getElementById('multiFileInput');
+      input.value = '';
+      input.click();
+    }
+
+    function triggerSingleBranchUpload(branchName) {
+      appState.activeTargetBranchForUpload = branchName;
+      const input = document.getElementById('singleBranchFileInput');
+      input.value = '';
+      input.click();
+    }
+
+    async function handleFilesSelected(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      await processMultipleFiles(Array.from(files));
+    }
+
+    async function handleSingleBranchFile(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0 || !appState.activeTargetBranchForUpload) return;
+      const file = files[0];
+      const res = await processCsvFile(file, appState.activeTargetBranchForUpload);
+      if (res.success) {
+        showToast(`Filial "${res.branchName}" atualizada: ${res.count} notas ativas (${res.ignored} finalizadas descartadas)`, 'check');
+        refreshDashboard();
+      } else {
+        showToast(res.message || 'Erro ao importar arquivo', 'alert-circle');
+      }
+      appState.activeTargetBranchForUpload = null;
+    }
+
+    async function processMultipleFiles(files) {
+      let importedCount = 0;
+      let totalNotes = 0;
+      let totalIgnored = 0;
+
+      for (const file of files) {
+        if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') continue;
+        const res = await processCsvFile(file);
+        if (res.success) {
+          importedCount++;
+          totalNotes += res.count;
+          totalIgnored += res.ignored;
+        }
+      }
+
+      if (importedCount > 0) {
+        showToast(`${importedCount} filial(is) importada(s): ${totalNotes} notas ativas (${totalIgnored} descartadas)`, 'check');
+        refreshDashboard();
+      } else {
+        showToast('Nenhum arquivo CSV válido foi identificado.', 'alert-circle');
+      }
+    }
+
+    function renderBranchCards() {
+      const grid = document.getElementById('branchCardsGrid');
+      grid.innerHTML = '';
+      const branchList = Object.values(appState.branches);
+
+      if (branchList.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full p-8 text-center bg-white dark:bg-[#181a1f] rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+            <i data-lucide="inbox" class="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2"></i>
+            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Nenhum relatório de filial disponível</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Carregue arquivos CSV como Matriz.csv, São Paulo.csv ou Curitiba.csv</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      branchList.forEach(b => {
+        const totalRev = b.rows.reduce((sum, r) => sum + r.valorTotal, 0);
+        const count = b.rows.length;
+        
+        // Contagem de tratativas
+        const treatedCount = b.rows.filter(r => appState.financialActions && appState.financialActions[`${b.name}_${r.noteNumber}`]).length;
+        const pendingCount = Math.max(0, count - treatedCount);
+
+        // Notas com mais de 10 dias
+        const over10DaysList = b.rows.filter(r => r.daysOld > 10);
+        const over10DaysPendingList = over10DaysList.filter(r => !appState.financialActions || !appState.financialActions[`${b.name}_${r.noteNumber}`]);
+        const over10DaysCount = over10DaysList.length;
+        const over10DaysPendingCount = over10DaysPendingList.length;
+
+        const isBranchSelected = appState.selectedBranchFilter === b.name;
+        const isOldFilterActiveForThisBranch = isBranchSelected && appState.onlyOlderThan10Days;
+
+        const card = document.createElement('div');
+        card.className = `bg-white dark:bg-[#181a1f] rounded-2xl border transition flex flex-col justify-between overflow-hidden relative group ${
+          isBranchSelected 
+            ? 'border-[#211f1d] dark:border-[#ffffa0] ring-2 ring-[#ffffa0] dark:ring-[#ffffa0]/40 shadow-md' 
+            : 'border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 hover:shadow-md'
+        }`;
+
+        card.innerHTML = `
+          <div class="h-1.5 w-full" style="background-color: ${b.color}"></div>
+          <div class="p-5 flex-1">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <button 
+                  type="button"
+                  onclick="selectBranchAndScroll('${b.name}', false)" 
+                  class="group/title text-left flex items-center gap-2 hover:opacity-90 transition cursor-pointer" 
+                  title="Clique para ver notas de ${b.name}">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${b.color}"></span>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white group-hover/title:text-black dark:group-hover/title:text-[#ffffa0] group-hover/title:underline transition flex items-center gap-1.5">
+                    ${b.name}
+                    <i data-lucide="arrow-down-right" class="w-4 h-4 text-slate-600 dark:text-slate-400 opacity-70 group-hover/title:opacity-100 transition"></i>
+                  </h3>
+                </button>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1 font-mono">
+                  <i data-lucide="file" class="w-3 h-3"></i> ${b.filename || b.name + '.csv'}
+                </p>
+              </div>
+
+              <div class="flex flex-col items-end gap-1">
+                ${isBranchSelected ? `
+                  <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-900 bg-[#ffffa0] px-2 py-0.5 rounded-md border border-yellow-300">
+                    <i data-lucide="check-circle-2" class="w-3 h-3 text-slate-900"></i> Selecionada
+                  </span>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Métricas: Notas a Tratar (Pendentes) e VALOR TOTAL -->
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+              <div class="grid grid-cols-2 gap-3 items-end">
+                <div>
+                  <span class="text-[10px] font-bold uppercase text-amber-600 dark:text-yellow-300 block tracking-wider flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 dark:bg-yellow-400 ${pendingCount > 0 ? 'animate-pulse' : ''}"></span>
+                    Notas a Tratar
+                  </span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight">${formatNumberBR(pendingCount)}</span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">pendentes</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="text-[10px] font-medium uppercase text-slate-400 dark:text-slate-500 block tracking-wider">VALOR TOTAL</span>
+                  <span class="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 leading-normal block">${formatCurrencyBRL(totalRev)}</span>
+                </div>
+              </div>
+
+              <!-- Barra informativa: Total de Notas importadas vs Notas Tratadas -->
+              <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-[11px]">
+                <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                  <i data-lucide="files" class="w-3.5 h-3.5 text-slate-400"></i>
+                  Total de Notas: <strong class="text-slate-900 dark:text-white font-bold">${formatNumberBR(count)}</strong>
+                </span>
+                <span class="font-semibold ${treatedCount > 0 ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/50' : 'text-slate-400 dark:text-slate-500'} flex items-center gap-1">
+                  <i data-lucide="${treatedCount > 0 ? 'check-check' : 'clock'}" class="w-3 h-3"></i>
+                  ${treatedCount} tratada(s)
+                </span>
+              </div>
+            </div>
+
+            <!-- Indicador Interativo: Quantidade de Notas geradas com mais de 10 dias (Coluna Q) -->
+            <button 
+              type="button"
+              onclick="selectBranchOldNotesAndScroll('${b.name}')"
+              class="mt-3.5 w-full p-2.5 rounded-xl border transition flex items-center justify-between text-left group/warning cursor-pointer ${
+                isOldFilterActiveForThisBranch
+                  ? 'bg-amber-100 dark:bg-amber-950/60 border-amber-400 dark:border-amber-500 ring-2 ring-amber-300 dark:ring-amber-500/40'
+                  : over10DaysPendingCount > 0 
+                    ? 'bg-[#fffde7] dark:bg-amber-950/30 border-yellow-300 dark:border-amber-700/50 hover:bg-[#fef9c3] dark:hover:bg-amber-950/50' 
+                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }"
+              title="Clique para ver notas geradas há mais de 10 dias">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                  over10DaysPendingCount > 0 ? 'bg-[#ffffa0] text-slate-900 border border-yellow-300/80' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                }">
+                  <i data-lucide="${over10DaysPendingCount > 0 ? 'alert-triangle' : 'check'}" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <span class="text-xs font-bold ${over10DaysPendingCount > 0 ? 'text-slate-900 dark:text-yellow-200' : 'text-slate-600 dark:text-slate-300'} leading-tight block">
+                    Notas > 10 dias (Inclusão)
+                  </span>
+                  <span class="text-[10px] text-slate-500 dark:text-slate-400">
+                    ${treatedCount > 0 ? `${over10DaysPendingCount} pendente(s) de ${over10DaysCount}` : 'Clique para ver no detalhamento'}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-black ${
+                  over10DaysPendingCount > 0 ? 'bg-amber-200 dark:bg-[#ffffa0] text-slate-900 border border-amber-300 dark:border-yellow-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }">
+                  ${formatNumberBR(over10DaysPendingCount)}
+                </span>
+                ${treatedCount > 0 && over10DaysCount > over10DaysPendingCount ? `
+                  <span class="text-[10px] text-slate-400 font-medium">/ ${over10DaysCount}</span>
+                ` : ''}
+              </div>
+            </button>
+
+            <!-- Botão de atalho direto para notas da filial -->
+            <button 
+              type="button"
+              onclick="selectBranchAndScroll('${b.name}', false)" 
+              class="w-full mt-2.5 py-2 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                isBranchSelected && !appState.onlyOlderThan10Days
+                  ? 'bg-[#ffffa0] text-slate-900 border border-yellow-300 shadow-xs' 
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-[#fffde7] dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 hover:border-yellow-200'
+              }">
+              <i data-lucide="list-filter" class="w-3.5 h-3.5"></i>
+              ${isBranchSelected && !appState.onlyOlderThan10Days ? 'Exibindo notas desta filial' : 'Ver notas desta filial'}
+            </button>
+          </div>
+
+          <!-- Card Footer Action -->
+          <div class="px-5 py-3 bg-slate-50 dark:bg-[#131519] border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+              <i data-lucide="clock" class="w-3 h-3"></i> Atualizado: ${b.lastUpdated || 'Hoje'}
+            </span>
+            <button onclick="triggerSingleBranchUpload('${b.name}')" class="font-bold text-slate-800 dark:text-slate-200 hover:text-black dark:hover:text-[#ffffa0] flex items-center gap-1 hover:underline transition">
+              <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+              Atualizar CSV
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function selectBranchAndScroll(branchName, onlyOld = false) {
+      appState.selectedBranchFilter = branchName;
+      appState.onlyOlderThan10Days = onlyOld;
+      const select = document.getElementById('filialSelectFilter');
+      if (select) select.value = branchName;
+      appState.currentPage = 1;
+      
+      updateToggleOldNotesBtn();
+      renderBranchCards();
+      renderTable();
+      updateFilterHeaderBadge();
+
+      const section = document.getElementById('detalhamentoNotasSection');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      showToast(`Exibindo ${onlyOld ? 'notas > 10 dias' : 'notas'} de: ${branchName}`, onlyOld ? 'clock-alert' : 'filter');
+    }
+
+    function selectBranchOldNotesAndScroll(branchName) {
+      selectBranchAndScroll(branchName, true);
+    }
+
+    function clearBranchFilter() {
+      appState.selectedBranchFilter = 'ALL';
+      appState.onlyOlderThan10Days = false;
+      appState.selectedStatusFilter = 'ALL';
+      const selectFilial = document.getElementById('filialSelectFilter');
+      if (selectFilial) selectFilial.value = 'ALL';
+      const selectStatus = document.getElementById('statusSelectFilter');
+      if (selectStatus) selectStatus.value = 'ALL';
+
+      appState.currentPage = 1;
+      updateToggleOldNotesBtn();
+      renderBranchCards();
+      renderTable();
+      updateFilterHeaderBadge();
+    }
+
+    function toggleOlderThan10DaysFilter() {
+      appState.onlyOlderThan10Days = !appState.onlyOlderThan10Days;
+      appState.currentPage = 1;
+      updateToggleOldNotesBtn();
+      renderBranchCards();
+      renderTable();
+      updateFilterHeaderBadge();
+    }
+
+    function updateToggleOldNotesBtn() {
+      const btn = document.getElementById('toggleOldNotesBtn');
+      if (!btn) return;
+      if (appState.onlyOlderThan10Days) {
+        btn.className = 'text-xs px-3 py-2 rounded-xl font-bold border transition flex items-center gap-1.5 bg-[#ffffa0] border-yellow-300 text-slate-900 shadow-xs';
+        btn.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-slate-900"></i><span>> 10 dias (Ativo)</span>`;
+      } else {
+        btn.className = 'text-xs px-3 py-2 rounded-xl font-semibold border transition flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700';
+        btn.innerHTML = `<i data-lucide="clock-alert" class="w-3.5 h-3.5 text-amber-500"></i><span>> 10 dias</span>`;
+      }
+      lucide.createIcons();
+    }
+
+    function updateFilterHeaderBadge() {
+      const container = document.getElementById('activeFilterBadgeContainer');
+      if (!container) return;
+
+      const hasBranchFilter = appState.selectedBranchFilter !== 'ALL';
+      const hasOldFilter = appState.onlyOlderThan10Days;
+      const hasStatusFilter = appState.selectedStatusFilter && appState.selectedStatusFilter !== 'ALL';
+
+      if (!hasBranchFilter && !hasOldFilter && !hasStatusFilter) {
+        container.innerHTML = '';
+      } else {
+        let label = '';
+        if (hasBranchFilter) label += `Filial: <strong class="text-slate-900 dark:text-white">${appState.selectedBranchFilter}</strong>`;
+        if (hasBranchFilter && hasOldFilter) label += ` + `;
+        if (hasOldFilter) label += `<span class="text-slate-900 font-bold bg-[#ffffa0] px-1.5 py-0.5 rounded border border-yellow-300">> 10 dias</span>`;
+        if ((hasBranchFilter || hasOldFilter) && hasStatusFilter) label += ` + `;
+        if (hasStatusFilter) {
+          const statusText = appState.selectedStatusFilter === 'PENDING' ? 'Apenas Pendentes' : 'Apenas Tratadas';
+          label += `<span class="text-slate-800 dark:text-slate-200 font-bold">${statusText}</span>`;
+        }
+
+        container.innerHTML = `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#fffde7] dark:bg-slate-800 text-slate-800 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-600/50">
+            <span>${label}</span>
+            <button onclick="clearBranchFilter()" class="hover:text-red-600 font-bold ml-1 text-slate-500 dark:text-slate-400 hover:bg-yellow-200 dark:hover:bg-slate-700 rounded-full w-4 h-4 inline-flex items-center justify-center transition" title="Remover filtros">&times;</button>
+          </span>
+        `;
+      }
+      lucide.createIcons();
+    }
+
+    function populateBranchFilterOptions() {
+      const select = document.getElementById('filialSelectFilter');
+      const currentVal = appState.selectedBranchFilter;
+
+      select.innerHTML = '<option value="ALL">Todas as Filiais</option>';
+      Object.keys(appState.branches).forEach(bName => {
+        const opt = document.createElement('option');
+        opt.value = bName;
+        opt.textContent = bName;
+        if (bName === currentVal) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function applyTableFilters() {
+      appState.selectedBranchFilter = document.getElementById('filialSelectFilter').value;
+      const statusSelect = document.getElementById('statusSelectFilter');
+      if (statusSelect) {
+        appState.selectedStatusFilter = statusSelect.value;
+      }
+      appState.searchQuery = document.getElementById('tableSearchInput').value.trim().toLowerCase();
+      appState.currentPage = 1;
+      renderBranchCards();
+      renderTable();
+      updateFilterHeaderBadge();
+    }
+
+    function getFilteredRows() {
+      let rows = [];
+      Object.entries(appState.branches).forEach(([branchName, branchData]) => {
+        if (appState.selectedBranchFilter !== 'ALL' && appState.selectedBranchFilter !== branchName) {
+          return;
+        }
+
+        branchData.rows.forEach(item => {
+          if (appState.onlyOlderThan10Days && item.daysOld <= 10) {
+            return;
+          }
+
+          const actionKey = `${branchName}_${item.noteNumber}`;
+          const isTreated = !!(appState.financialActions && appState.financialActions[actionKey]);
+
+          // Filtro por tratativa: ALL, PENDING ou TREATED
+          if (appState.selectedStatusFilter === 'PENDING' && isTreated) {
+            return;
+          }
+          if (appState.selectedStatusFilter === 'TREATED' && !isTreated) {
+            return;
+          }
+
+          rows.push({
+            filial: branchName,
+            color: branchData.color,
+            noteNumber: item.noteNumber,
+            inclusaoDate: item.inclusaoDate,
+            daysOld: item.daysOld,
+            client: item.client,
+            valorTotal: item.valorTotal
+          });
+        });
+      });
+
+      if (appState.searchQuery) {
+        rows = rows.filter(r => 
+          r.noteNumber.toLowerCase().includes(appState.searchQuery) ||
+          r.client.toLowerCase().includes(appState.searchQuery) ||
+          r.filial.toLowerCase().includes(appState.searchQuery) ||
+          r.inclusaoDate.toLowerCase().includes(appState.searchQuery) ||
+          String(r.valorTotal).includes(appState.searchQuery)
+        );
+      }
+
+      return rows;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      const filtered = getFilteredRows();
+      const totalRows = filtered.length;
+
+      document.getElementById('tableRecordCount').textContent = `Total: ${totalRows} nota(s) encontrada(s)`;
+
+      if (totalRows === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400 dark:text-slate-500">
+              Nenhuma nota fiscal encontrada para os filtros selecionados.
+            </td>
+          </tr>
+        `;
+        renderPagination(0, 1);
+        return;
+      }
+
+      const totalPages = Math.ceil(totalRows / appState.pageSize);
+      if (appState.currentPage > totalPages) appState.currentPage = totalPages;
+
+      const startIndex = (appState.currentPage - 1) * appState.pageSize;
+      const endIndex = Math.min(startIndex + appState.pageSize, totalRows);
+      const pageRows = filtered.slice(startIndex, endIndex);
+
+      pageRows.forEach(row => {
+        const isOlder10 = row.daysOld > 10;
+        const actionKey = `${row.filial}_${row.noteNumber}`;
+        const hasAction = appState.financialActions && appState.financialActions[actionKey];
+
+        const tr = document.createElement('tr');
+        tr.className = `transition ${
+          isOlder10 
+            ? 'bg-[#fffde7]/50 dark:bg-amber-950/20 hover:bg-[#fffde7] dark:hover:bg-amber-950/40' 
+            : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+        }`;
+
+        const safeFilial = encodeURIComponent(row.filial);
+        const safeNoteNumber = encodeURIComponent(row.noteNumber);
+
+        tr.innerHTML = `
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <span class="w-2 h-2 rounded-full" style="background-color: ${row.color}"></span>
+              ${row.filial}
+            </span>
+          </td>
+          <td class="py-3 px-4 font-mono font-medium text-slate-800 dark:text-slate-200">${row.noteNumber}</td>
+          <td class="py-3 px-4 text-slate-600 dark:text-slate-400 font-mono text-xs">${row.inclusaoDate}</td>
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${
+              isOlder10 
+                ? 'bg-[#ffffa0] text-slate-900 border border-yellow-300 shadow-xs' 
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+            }">
+              <i data-lucide="${isOlder10 ? 'clock-alert' : 'clock'}" class="w-3 h-3 ${isOlder10 ? 'text-slate-800' : 'text-slate-400'}"></i>
+              ${row.daysOld} d
+            </span>
+          </td>
+          <td class="py-3 px-4 font-medium text-slate-900 dark:text-white">${row.client}</td>
+          <td class="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">${formatCurrencyBRL(row.valorTotal)}</td>
+          <td class="py-3 px-4 text-center">
+            ${hasAction ? `
+              <button 
+                onclick="window.openFinancialActionModal('${safeFilial}', '${safeNoteNumber}')"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-[#ffffa0] text-slate-900 border border-yellow-300 hover:bg-yellow-200 transition shadow-xs"
+                title="Financeiro já acionado. Clique para ver ou reenviar.">
+                <i data-lucide="check-check" class="w-3.5 h-3.5 text-slate-900"></i>
+                <span>Tratada</span>
+              </button>
+            ` : `
+              <button 
+                onclick="window.openFinancialActionModal('${safeFilial}', '${safeNoteNumber}')"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-[#fffde7] dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 hover:border-yellow-300 transition cursor-pointer">
+                <i data-lucide="send" class="w-3.5 h-3.5 text-slate-500"></i>
+                <span>Acionar Financeiro</span>
+              </button>
+            `}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      renderPagination(totalRows, totalPages);
+      lucide.createIcons();
+    }
+
+    function renderPagination(totalRows, totalPages) {
+      const container = document.getElementById('paginationControls');
+      container.innerHTML = '';
+      if (totalPages <= 1) return;
+
+      const prevBtn = document.createElement('button');
+      prevBtn.className = `p-1.5 rounded-lg border text-xs font-medium transition ${
+        appState.currentPage === 1 
+          ? 'border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed' 
+          : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+      }`;
+      prevBtn.innerHTML = `<i data-lucide="chevron-left" class="w-4 h-4"></i>`;
+      prevBtn.disabled = appState.currentPage === 1;
+      prevBtn.onclick = () => { if (appState.currentPage > 1) { appState.currentPage--; renderTable(); } };
+      container.appendChild(prevBtn);
+
+      const pageInfo = document.createElement('span');
+      pageInfo.className = 'px-3 py-1 text-xs text-slate-600 dark:text-slate-400 font-semibold';
+      pageInfo.textContent = `Página ${appState.currentPage} de ${totalPages}`;
+      container.appendChild(pageInfo);
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = `p-1.5 rounded-lg border text-xs font-medium transition ${
+        appState.currentPage === totalPages 
+          ? 'border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed' 
+          : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+      }`;
+      nextBtn.innerHTML = `<i data-lucide="chevron-right" class="w-4 h-4"></i>`;
+      nextBtn.disabled = appState.currentPage === totalPages;
+      nextBtn.onclick = () => { if (appState.currentPage < totalPages) { appState.currentPage++; renderTable(); } };
+      container.appendChild(nextBtn);
+
+      lucide.createIcons();
+    }
+
+    function exportConsolidatedCSV() {
+      const rows = getFilteredRows();
+      if (rows.length === 0) {
+        showToast('Nenhum dado disponível para exportação.', 'alert-circle');
+        return;
+      }
+
+      let csvContent = 'Filial;Numero da Nota;Data Emissao;Dias Decorridos;Fornecedor;Valor NFe;Status Tratativa\n';
+      rows.forEach(r => {
+        const cleanClient = `"${r.client.replace(/"/g, '""')}"`;
+        const valFormatted = r.valorTotal.toFixed(2).replace('.', ',');
+        const isTreated = appState.financialActions[`${r.filial}_${r.noteNumber}`] ? 'Tratada' : 'Pendente';
+        csvContent += `${r.filial};${r.noteNumber};${r.inclusaoDate};${r.daysOld};${cleanClient};${valFormatted};${isTreated}\n`;
+      });
+
+      const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Relatorio_Notas_Spot_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('Relatório exportado com sucesso!', 'check');
+    }
+
+    window.openFinancialActionModal = function(safeFilial, safeNoteNumber) {
+      const filialName = decodeURIComponent(safeFilial);
+      const noteNum = decodeURIComponent(safeNoteNumber);
+
+      const branch = appState.branches[filialName];
+      if (!branch) return;
+
+      const note = branch.rows.find(r => r.noteNumber === noteNum);
+      if (!note) return;
+
+      appState.activeModalData = {
+        filial: filialName,
+        noteNumber: note.noteNumber,
+        inclusaoDate: note.inclusaoDate,
+        client: note.client,
+        valorTotal: note.valorTotal
+      };
+
+      const modalEl = document.getElementById('financialActionModal');
+      const modalCard = document.getElementById('modalCard');
+
+      document.getElementById('modalFilialBadge').textContent = `Filial: ${filialName}`;
+      document.getElementById('modalValorBadge').textContent = formatCurrencyBRL(note.valorTotal);
+      document.getElementById('modalNoteNumber').textContent = note.noteNumber;
+      document.getElementById('modalInclusaoDate').textContent = note.inclusaoDate;
+      document.getElementById('modalClientName').textContent = note.client;
+
+      const actionKey = `${filialName}_${note.noteNumber}`;
+      const existingAction = appState.financialActions[actionKey];
+
+      const purchaseDateInput = document.getElementById('modalPurchaseDate');
+      const commentsInput = document.getElementById('modalComments');
+
+      if (existingAction) {
+        purchaseDateInput.value = existingAction.purchaseDate || '';
+        commentsInput.value = existingAction.comments || 'Compra cartão Clara, recibo já enviado via App. Favor baixar nota do ERP.';
+      } else {
+        purchaseDateInput.value = new Date().toISOString().split('T')[0];
+        commentsInput.value = 'Compra cartão Clara, recibo já enviado via App. Favor baixar nota do ERP.';
+      }
+
+      modalEl.classList.remove('hidden');
+      modalEl.classList.add('flex');
+      setTimeout(() => {
+        modalCard.classList.remove('scale-95');
+        modalCard.classList.add('scale-100');
+        purchaseDateInput.focus();
+      }, 20);
+
+      lucide.createIcons();
+    };
+
+    window.closeFinancialActionModal = function() {
+      const modalEl = document.getElementById('financialActionModal');
+      const modalCard = document.getElementById('modalCard');
+      modalCard.classList.remove('scale-100');
+      modalCard.classList.add('scale-95');
+      setTimeout(() => {
+        modalEl.classList.add('hidden');
+        modalEl.classList.remove('flex');
+        appState.activeModalData = null;
+      }, 150);
+    };
+
+    window.handleBackdropClick = function(e) {
+      if (e.target.id === 'financialActionModal') {
+        window.closeFinancialActionModal();
+      }
+    };
+
+    window.formatFinancialBodyText = function() {
+      if (!appState.activeModalData) return '';
+      const data = appState.activeModalData;
+      const purchaseDate = document.getElementById('modalPurchaseDate').value || 'Não informada';
+      const comments = document.getElementById('modalComments').value.trim() || 'Sem observações.';
+      
+      let formattedPurchaseDate = purchaseDate;
+      if (purchaseDate.includes('-')) {
+        const [y, m, d] = purchaseDate.split('-');
+        formattedPurchaseDate = `${d}/${m}/${y}`;
+      }
+
+      return `Olá time Financeiro,\n\nSolicitamos a tratativa e baixa da seguinte nota fiscal pendente:\n\n` +
+        `• Filial: ${data.filial}\n` +
+        `• Nº da Nota: ${data.noteNumber}\n` +
+        `• Fornecedor: ${data.client}\n` +
+        `• Valor NFe: ${formatCurrencyBRL(data.valorTotal)}\n` +
+        `• Data de Emissão: ${data.inclusaoDate}\n` +
+        `• Data da Compra: ${formattedPurchaseDate}\n\n` +
+        `Orientações e Comentários:\n${comments}\n\n` +
+        `Mensagem gerada automaticamente via Painel de Acompanhamento Spot.`;
+    };
+
+    window.handleSendFinancialAction = function() {
+      if (!appState.activeModalData) return;
+
+      const purchaseDate = document.getElementById('modalPurchaseDate').value;
+      if (!purchaseDate) {
+        showToast('Por favor, informe a Data da Compra.', 'alert-triangle');
+        document.getElementById('modalPurchaseDate').focus();
+        return;
+      }
+
+      const email = document.getElementById('modalFinanceEmail').value.trim() || 'financeiro@spotlar.com.br';
+      const comments = document.getElementById('modalComments').value.trim();
+      const data = appState.activeModalData;
+
+      const actionKey = `${data.filial}_${data.noteNumber}`;
+      appState.financialActions[actionKey] = {
+        dateSent: new Date().toLocaleString('pt-BR'),
+        purchaseDate: purchaseDate,
+        comments: comments,
+        email: email
+      };
+
+      const subject = `[AÇÃO FINANCEIRO SPOT] Baixa de Nota ${data.noteNumber} - Filial ${data.filial}`;
+      const body = window.formatFinancialBodyText();
+
+      const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+      window.open(gmailComposeUrl, '_blank');
+
+      window.closeFinancialActionModal();
+      renderBranchCards();
+      renderTable();
+      updateFilterHeaderBadge();
+      showToast(`Nota ${data.noteNumber} marcada como tratada! Abrindo Gmail...`, 'check');
+    };
+
+    window.copyModalFormattedText = function() {
+      const text = window.formatFinancialBodyText();
+      if (!text) return;
+
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      
+      try {
+        document.execCommand('copy');
+        showToast('Dados da nota copiados para a área de transferência!', 'copy');
+      } catch (err) {
+        showToast('Não foi possível copiar os dados.', 'alert-circle');
+      }
+      document.body.removeChild(textarea);
+    };
+
+    function resetToSampleData() {
+      initializeSampleData();
+      appState.selectedBranchFilter = 'ALL';
+      appState.selectedStatusFilter = 'PENDING';
+      appState.onlyOlderThan10Days = false;
+      appState.searchQuery = '';
+      appState.currentPage = 1;
+      const searchInput = document.getElementById('tableSearchInput');
+      if (searchInput) searchInput.value = '';
+      const statusSelect = document.getElementById('statusSelectFilter');
+      if (statusSelect) statusSelect.value = 'PENDING';
+      updateToggleOldNotesBtn();
+      refreshDashboard();
+      showToast('Dados de exemplo restaurados!', 'rotate-ccw');
+    }
+
+    let toastTimeout = null;
+    function showToast(message, iconName = 'check') {
+      const toast = document.getElementById('toastNotification');
+      const msgEl = document.getElementById('toastMessage');
+      const iconEl = document.getElementById('toastIcon');
+
+      msgEl.textContent = message;
+      iconEl.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
+      lucide.createIcons();
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    function refreshDashboard() {
+      populateBranchFilterOptions();
+      renderBranchCards();
+      renderTable();
+      updateFilterHeaderBadge();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeSampleData();
+      refreshDashboard();
+      lucide.createIcons();
+    });
+  </script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDlsNBKbe8tNgHgHehiCvUWtqGuPE6VYu0",
+    authDomain: "recebimento-spot.firebaseapp.com",
+    projectId: "recebimento-spot",
+    storageBucket: "recebimento-spot.firebasestorage.app",
+    messagingSenderId: "792568015207",
+    appId: "1:792568015207:web:43d0d34a68693b2a01e7c2"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+</body>
+</html>
